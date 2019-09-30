@@ -3,10 +3,24 @@ import numpy as np
 import sys
 import os
 
-SIZE = 1000
+SIZE = 700
 MIN_MATCH_COUNT = 10
 GOOD_MATCH_PERCENT = 0.15
 bf = cv2.BFMatcher(cv2.NORM_L2, crossCheck=True)
+
+def scaleh(sx,sy,h):
+  s = np.eye(3,3)
+  s[0][0] = sx
+  s[1][1] = sy
+  s[2][2] = 0.5
+  s_inv = np.linalg.inv(s)
+  return(s.dot(h.dot(s_inv)))
+
+def correct(c):
+  idx = np.argwhere(np.all(c == 0, axis=0))
+  c =  np.delete(c, idx, axis=1)
+  return(c)
+
 
 
 # img1 gets projected to img2
@@ -27,6 +41,7 @@ def matchImages(img1,img2,kp1,kp2,des1,des2):
   im1Reg = cv2.warpPerspective(img1, h, (width*2, height)) 
   b = (res == 0)
   res[b] = im1Reg[b]
+  res = correct(res)
   return res, h
 
 
@@ -34,14 +49,14 @@ images =  (os.listdir(sys.argv[1]))
 images.sort()
 kps = []
 
-for imgf in range(images):
+sift = cv2.xfeatures2d.SIFT_create()
+for imgf in images:
   print(os.path.join(os.getcwd(),os.path.join(sys.argv[1],imgf)))
   img = cv2.imread(os.path.join(os.getcwd(),os.path.join(sys.argv[1],imgf)))
   h,w,_ = img.shape
-  nh,nw = SIZE*(h/max(h,w)),SIZE*(w/max(h,w))
+  nh,nw = SIZE*(h*1.0/max(h*1.0,w*1.0)),SIZE*(w*1.0/max(h*1.0,w*1.0))
   img = cv2.resize(img,(int(nh),int(nw)))
   gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
-  sift = cv2.xfeatures2d.SIFT_create()
   kp,des = sift.detectAndCompute(gray,None)
   kps.append((kp,des))
   # cv2.drawKeypoints(gray,kp,img)
@@ -58,23 +73,41 @@ i2 = cv2.imread(os.path.join(os.getcwd(),os.path.join(sys.argv[1],images[idx2]))
 h,w,_ = i1.shape
 nh,nw = SIZE*(h/max(h,w)),SIZE*(w/max(h,w))
 i1 = cv2.resize(i1,(int(nh),int(nw)))
-
+  
 h,w,_ = i2.shape
 nh,nw = SIZE*(h/max(h,w)),SIZE*(w/max(h,w))
 i2 = cv2.resize(i2,(int(nh),int(nw)))
 
-res1 ,h = matchImages(i1,i2,kps[idx1][0],kps[idx2][0],kps[idx1][1],kps[idx2][1])
-# idx1 = 0
-# idx2 = 2
-# res2 ,h = matchImages(i1,i2,kps[idx1][0],kps[idx2][0],kps[idx1][1],kps[idx2][1])
+res1,h = matchImages(i1,i2,kps[idx1][0],kps[idx2][0],kps[idx1][1],kps[idx2][1])
 
+idx3 = 2
+i1 = cv2.imread(os.path.join(os.getcwd(),os.path.join(sys.argv[1],images[idx3])))
+i2 = res1
+i1 = cv2.resize(i1,(int(nh),int(nw)))
+
+gray1 = cv2.cvtColor(i1,cv2.COLOR_BGR2GRAY)
+kp1,des1 = sift.detectAndCompute(gray1,None)
+  
+
+
+gray = cv2.cvtColor(i2,cv2.COLOR_BGR2GRAY)
+sift = cv2.xfeatures2d.SIFT_create()
+kp2,des2 = sift.detectAndCompute(res1,None)
+
+res2,h2 = matchImages(i1,i2,kp1,kp2,des1,des2)
+
+
+
+
+  
 
 cv2.imshow("1",i1)
 cv2.imshow("2",i2)
 
 
 cv2.imshow("matching1", res1)
-# cv2.imshow("matching2", res2)
+
+cv2.imshow("matching2", res2)
 
 cv2.waitKey(0)
 
