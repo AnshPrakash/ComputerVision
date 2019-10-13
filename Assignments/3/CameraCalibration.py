@@ -36,7 +36,10 @@ cv2.destroyAllWindows()
 
 ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[::-1],None,None)
 
-np.save('CaliMat.npy', [mtx, dist, rvecs, tvecs])
+
+np.savez('CaliMat.npz', mtx = mtx, dist =dist, rvecs = rvecs,tvecs = tvecs)
+
+
 
 img = cv2.imread('4.png')
 h, w = img.shape[0],img.shape[1]
