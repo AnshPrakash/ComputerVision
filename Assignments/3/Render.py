@@ -96,7 +96,7 @@ def render(frame,rvecs, tvecs, mtx, dist):
     # render model in the middle of the reference surface. To do so,
     # model points must be displaced
     points = np.array([[p[0] + w / 2, p[1] + h / 2, p[2]] for p in points])
-    imgpts, jac = cv2.projectPoints(obj.vertices, rvecs, tvecs, mtx, dist)
+    imgpts, jac = cv2.projectPoints(points.reshape(-1, 1, 3), rvecs, tvecs, mtx, dist)
     imgpts = np.int32(imgpts)
     frame = cv2.fillConvexPoly(frame, imgpts, (137, 27, 211))
   return(frame)
@@ -126,7 +126,7 @@ while True:
     _,rvecs, tvecs,_ = cv2.solvePnPRansac(marker1_pts, corners, mtx, dist)
     # imgpts, jac = cv2.projectPoints(axis, rvecs, tvecs, mtx, dist)
     # imgpts, jac = cv2.projectPoints(obj.vertices, rvecs, tvecs, mtx, dist)
-    render(frame,rvecs, tvecs, mtx, dist) 
+    render(frame,rvecs, tvecs, mtx, dist)
     # frame = draw(frame,imgpts)
   else:
     frame = aruco.drawDetectedMarkers(frame.copy(), corners, ids)
