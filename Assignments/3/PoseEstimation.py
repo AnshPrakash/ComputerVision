@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 # import os,sys
 
+chessX,chessY = 7 , 9
 
 # Load Calibration Matrix
 with np.load('CaliMat.npz') as X:
@@ -15,21 +16,21 @@ def draw(img, corners, imgpts):
   return img
 
 criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
-objp = np.zeros((9*7,3), np.float32)
-objp[:,:2] = np.mgrid[0:7,0:9].T.reshape(-1,2)
+objp = np.zeros((chessY*chessX,3), np.float32)
+objp[:,:2] = np.mgrid[0:chessX,0:chessY].T.reshape(-1,2)
+
 
 axis = np.float32([[3,0,0], [0,3,0], [0,0,-3]]).reshape(-1,3)
 
-files = ["10.png"]
+files = ["4.png"]
 
 for fname in files:
   img = cv2.imread(fname)
   gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
-  ret, corners = cv2.findChessboardCorners(gray, (7,9),None)
+  ret, corners = cv2.findChessboardCorners(gray, (chessX,chessY),None)
   print(ret)
   if ret == True:
     corners2 = cv2.cornerSubPix(gray,corners,(11,11),(-1,-1),criteria)
-
     # Find the rotation and translation vectors.
     _,rvecs, tvecs,_ = cv2.solvePnPRansac(objp, corners2, mtx, dist)
 
@@ -37,9 +38,9 @@ for fname in files:
     imgpts, jac = cv2.projectPoints(axis, rvecs, tvecs, mtx, dist)
     img = draw(img,corners2,imgpts)
     cv2.imshow('img',img)
-    k = cv2.waitKey(0) & 0xff
-    if k == 's':
-      cv2.imwrite(fname[:6]+'.png', img)
+    k = cv2.waitKey(0)
+    if k == 115:
+      cv2.imwrite("pose.png", img)
 
 
 
