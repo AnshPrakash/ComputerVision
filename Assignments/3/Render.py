@@ -126,7 +126,7 @@ while True:
     _,rvecs, tvecs,_ = cv2.solvePnPRansac(marker1_pts, corners, mtx, dist)
     # imgpts, jac = cv2.projectPoints(axis, rvecs, tvecs, mtx, dist)
     # imgpts, jac = cv2.projectPoints(obj.vertices, rvecs, tvecs, mtx, dist)
-    render(frame,rvecs, tvecs, mtx, dist)
+    render(frame,rvecs, tvecs, mtx, dist) 
     # frame = draw(frame,imgpts)
   else:
     frame = aruco.drawDetectedMarkers(frame.copy(), corners, ids)
