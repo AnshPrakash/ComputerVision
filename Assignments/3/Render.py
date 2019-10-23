@@ -87,7 +87,7 @@ markerLength = 1.2
 
 def render(frame,rvecs, tvecs, mtx, dist):
   vertices = obj.vertices
-  scale_matrix = np.eye(3) * 3
+  scale_matrix = np.eye(3) * -3
   h, w = marker1.shape
   for face in obj.faces:
     face_vertices = face[0]
@@ -115,6 +115,10 @@ axis = axis[:, np.newaxis, :]
 while True:
   ret, frame = cap.read()
   frame = cv2.resize(frame, None, fx=2, fy=2, interpolation=cv2.INTER_AREA)
+  h, w = frame.shape[0],frame.shape[1]
+  newcameramtx, roi = cv2.getOptimalNewCameraMatrix(mtx,dist,(w,h),1,(w,h))
+  frame = cv2.undistort(frame, mtx, dist, None, newcameramtx)
+
   gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
   parameters =  aruco.DetectorParameters_create()
   corners, ids, rejectedImgPoints = aruco.detectMarkers(gray, aruco_dict, parameters=parameters)
