@@ -11,15 +11,6 @@ MIN_MATCH_COUNT = 10
 GOOD_MATCH_PERCENT = 0.20
 bf = cv2.BFMatcher(cv2.NORM_L2, crossCheck=True)
 
-
-def draw(img, corners, imgpts):
-  for corner in corners:
-    corner = tuple(corner.ravel())
-    img = cv2.line(img, corner, tuple(imgpts[0].ravel()), (255,0,0), 5)
-    img = cv2.line(img, corner, tuple(imgpts[1].ravel()), (0,255,0), 5)
-    img = cv2.line(img, corner, tuple(imgpts[2].ravel()), (0,0,255), 5)
-  return img
-
 def getHomograpy(img1,img2):
   gray1 = cv2.cvtColor(img1,cv2.COLOR_BGR2GRAY)
   gray2 = cv2.cvtColor(img2,cv2.COLOR_BGR2GRAY)
@@ -56,15 +47,24 @@ with np.load('CaliMat.npz') as X:
   mtx, dist, rvecs, tvecs = [X[i] for i in ('mtx','dist','rvecs','tvecs')]
 
 
-
-marker1 = cv2.imread("./Markers/marker1.png",cv2.IMREAD_GRAYSCALE)
 aruco_dict = aruco.Dictionary_get(aruco.DICT_6X6_250)
 parameters =  aruco.DetectorParameters_create()
-marker1_pts, markerId, _ = aruco.detectMarkers(marker1, aruco_dict, parameters=parameters)
+
+marker1 = cv2.imread("./Markers/marker1.png",cv2.IMREAD_GRAYSCALE)
+marker1_pts, markerId1, _ = aruco.detectMarkers(marker1, aruco_dict, parameters=parameters)
 marker1_pts = np.array(marker1_pts[0][0])
 z = np.zeros((marker1_pts.shape[0],1))
 marker1_pts = np.append(marker1_pts, z, axis=1)
 marker1_pts = marker1_pts[:, np.newaxis, :]
+
+
+marker2 = cv2.imread("./Markers/marker2.png",cv2.IMREAD_GRAYSCALE)
+marker2_pts, markerId2, _ = aruco.detectMarkers(marker2, aruco_dict, parameters=parameters)
+marker2_pts = np.array(marker2_pts[0][0])
+z = np.zeros((marker2_pts.shape[0],1))
+marker2_pts = np.append(marker2_pts, z, axis=1)
+marker2_pts = marker2_pts[:, np.newaxis, :]
+
 
 
 
@@ -85,22 +85,25 @@ obj.vertices = np.array(obj.vertices)
 markerLength = 1.2
 
 
-def render(frame,rvecs, tvecs, mtx, dist):
+def motionVector(v1,v2,steps):
+  return((v2 - v1)/steps)
+
+def render(frame,rvecs, tvecs, mtx, dist,tx,ty):
   vertices = obj.vertices
   scale_matrix = np.eye(3) * -3
+  trans = np.array([tx,ty])
   h, w = marker1.shape
   for face in obj.faces:
     face_vertices = face[0]
     points = np.array([vertices[vertex - 1] for vertex in face_vertices])
     points = np.dot(points, scale_matrix)
-    # render model in the middle of the reference surface. To do so,
-    # model points must be displaced
     points = np.array([[p[0] + w / 2, p[1] + h / 2, p[2]] for p in points])
     imgpts, jac = cv2.projectPoints(points.reshape(-1, 1, 3), rvecs, tvecs, mtx, dist)
+    imgpts = imgpts + trans
     imgpts = np.int32(imgpts)
     frame = cv2.fillConvexPoly(frame, imgpts, (137, 27, 211))
   return(frame)
-    
+
 
 cap = cv2.VideoCapture(0)
 # Check if the webcam is opened correctly
@@ -108,34 +111,47 @@ if not cap.isOpened():
   raise IOError("Cannot open webcam")
 
 
-axis = np.float32([[3,0,0], [0,3,0], [0,0,3]]).reshape(-1,3)
-axis = axis[:, np.newaxis, :]
-
-
+tx,ty = 0,0
+steps = 10
 while True:
   ret, frame = cap.read()
   frame = cv2.resize(frame, None, fx=2, fy=2, interpolation=cv2.INTER_AREA)
   h, w = frame.shape[0],frame.shape[1]
   newcameramtx, roi = cv2.getOptimalNewCameraMatrix(mtx,dist,(w,h),1,(w,h))
   frame = cv2.undistort(frame, mtx, dist, None, newcameramtx)
-
   gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
   parameters =  aruco.DetectorParameters_create()
   corners, ids, rejectedImgPoints = aruco.detectMarkers(gray, aruco_dict, parameters=parameters)
-  if ids == markerId:
-    corners = np.array(corners[0][0])
-    corners = corners[:, np.newaxis, :]
-    # H_marker1 = cv2.getPerspectiveTransform(marker1_pts, corners)
-    # rvec, tvec, _ = aruco.estimatePoseSingleMarkers(corners, markerLength, mtx, dist)
-    _,rvecs, tvecs,_ = cv2.solvePnPRansac(marker1_pts, corners, mtx, dist)
-    # imgpts, jac = cv2.projectPoints(axis, rvecs, tvecs, mtx, dist)
-    # imgpts, jac = cv2.projectPoints(obj.vertices, rvecs, tvecs, mtx, dist)
-    render(frame,rvecs, tvecs, mtx, dist)
-    # frame = draw(frame,imgpts)
-  else:
-    frame = aruco.drawDetectedMarkers(frame.copy(), corners, ids)
+  if ids is not None and len(ids)>1:
+    if ids[0] != markerId1:
+      # print("Before",corners)
+      temp = corners[0].copy()
+      corners[0] = corners[1].copy()
+      corners[1] = temp
+      temp = ids[0].copy()
+      ids[0] = ids[1].copy()
+      ids[1] = temp
+      # print("After",corners)
+
+  if ids is not None and ids[0] == markerId1:
+    corners1 = np.array(corners[0][0])
+    corners1 = corners1[:, np.newaxis, :]
+    _,rvecs, tvecs,_ = cv2.solvePnPRansac(marker1_pts, corners1, mtx, dist)
+    render(frame,rvecs, tvecs, mtx, dist,tx,ty)
+  if ids is not None and ids.shape[0]>1 and ids[1] == markerId2:
+    v1 = (np.mean(corners[0][0],axis = 0))
+    v2 = (np.mean(corners[1][0],axis = 0))
+    v1[0] = v1[0] + tx
+    v1[1] = v1[1] + ty
+    dx,dy = motionVector(v1,v2,steps)
+    tx = tx + dx
+    ty = ty + dy
+    # print("dx,dy",dx,dy)
+  frame = aruco.drawDetectedMarkers(frame, corners, ids)
   cv2.imshow('WebCam', frame)
   c = cv2.waitKey(1)
   if c == 27:
       break
 
+cap.release()
+cv2.destroyAllWindows()
