@@ -45,8 +45,8 @@ print("Cuda ",cuda_avail)
 # criterion = nn.BCELoss()
 criterion = nn.CrossEntropyLoss()
 # criterion = nn.MSELoss()
-optimizer = optim.SGD(net.parameters(), lr=0.001,momentum = 0.9,weight_decay=1e-5)
-# optimizer = torch.optim.Adam(net.parameters(), lr=0.001, eps=1e-8, amsgrad=False)
+# optimizer = optim.SGD(net.parameters(), lr=0.001,momentum = 0.9,weight_decay=1e-5)
+optimizer = torch.optim.Adam(net.parameters(), lr=0.001)
 epochs = 200
 
 
