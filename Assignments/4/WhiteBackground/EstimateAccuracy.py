@@ -13,15 +13,6 @@ import os
   3 : Stop
 '''
 
-
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import torch.optim as optim
-from torch.utils.data import Dataset,DataLoader
-import matplotlib.pyplot as plt
-from torch.autograd import Variable
-from sklearn.metrics import f1_score
 from network import *
 
 
@@ -54,7 +45,7 @@ with torch.no_grad():
         if ret == True:
           frame = cv2.resize(frame, (50,50), interpolation = cv2.INTER_AREA)
           frame = frame/255.0
-          inputs = Variable(torch.from_numpy(frame.reshape(1,frame.shape[2],frame.shape[0],frame.shape[1])).float())
+          inputs = (torch.from_numpy(frame.reshape(1,frame.shape[2],frame.shape[0],frame.shape[1])).float())
           # target = Variable(torch.from_numpy(np.array([one_hot])).float())
           output = net(inputs)
           # print(output)

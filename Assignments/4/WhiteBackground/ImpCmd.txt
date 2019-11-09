@@ -1,0 +1,6 @@
+
+// change format
+ffmpeg -i input.webm out.mp4
+
+//merge multiplpe files into one
+mkvmerge -o outfile.mkv infile_01.mp4 \+ infile_02.mp4 \+ infile_03.mp4
