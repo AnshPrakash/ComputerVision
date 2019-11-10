@@ -50,11 +50,12 @@ criterion = nn.CrossEntropyLoss()
 # optimizer = optim.SGD(net.parameters(), lr=0.001,momentum = 0.9,weight_decay=1e-5)
 optimizer = torch.optim.Adam(net.parameters(), lr=0.001)
 epochs = 200
-batch_size = 32
+batch_size = 64
 
 Loss = []
 iterations = []
 
+net.train()
 for epoch_i in range(epochs):
   running_loss = 0.0
   total_pts = 0
