@@ -25,10 +25,10 @@ criterion = nn.CrossEntropyLoss()
 Loss = []
 iterations = []
 Accuracy = []
-epochs = 50
+epochs = 3
 with torch.no_grad():
   for epoch_i in range(epochs):
-    PATH = "./Models/SimpleMusicModel_"+str(epoch_i + 130 )+".model"
+    PATH = "./Models/SimpleMusicModel_"+str(epoch_i)+".model"
     net = Net()
     net.load_state_dict(torch.load(PATH))
     net.eval() 
@@ -44,9 +44,10 @@ with torch.no_grad():
       while cap.isOpened():
         ret, frame = cap.read() 
         if ret == True:
+          frame = cv2.split(frame)[0]
           frame = cv2.resize(frame, (50,50), interpolation = cv2.INTER_AREA)
           frame = frame/255.0
-          inputs = (torch.from_numpy(frame.reshape(1,frame.shape[2],frame.shape[0],frame.shape[1])).float())
+          inputs = (torch.from_numpy(frame.reshape(1,1,frame.shape[0],frame.shape[1])).float())
           # target = Variable(torch.from_numpy(np.array([one_hot])).float())
           output = net(inputs)
           # print(output)

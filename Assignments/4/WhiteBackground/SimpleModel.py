@@ -18,8 +18,10 @@ def countFrames(vidFile):
   total = count_frames(vidFile, override=override)
   return(total)
 
+dataset = sys.argv[1] 
 
-classes = ["Dataset/background/","Dataset/next/","Dataset/prev/","Dataset/stop/"]
+classes = ["/background/","/next/","/prev/","/stop/"]
+classes = [dataset +c for c in classes]
 for clss in classes:
   print(clss+"train.mp4",count_frames(clss+"train.mp4"))
 
@@ -65,9 +67,10 @@ for epoch_i in range(epochs):
     while cap.isOpened():
       ret, frame = cap.read() 
       if ret == True:
+        frame = cv2.split(frame)[0]
         frame = cv2.resize(frame, (50,50), interpolation = cv2.INTER_AREA)
         frame = frame/255.0
-        inputs = (torch.from_numpy(frame.reshape(1,frame.shape[2],frame.shape[0],frame.shape[1])).float())
+        inputs = (torch.from_numpy(frame.reshape(1,1,frame.shape[0],frame.shape[1])).float())
         target = Variable(torch.from_numpy(np.array([one_hot])).float())
 
         optimizer.zero_grad()   # zero the gradient buffers
