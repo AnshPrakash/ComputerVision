@@ -14,7 +14,7 @@ from network import *
 
 labels = [0,1,2,3]
 
-PATH = "./Models/SimpleMusicModel_132.model"
+PATH = "./Models/SimpleMusicModel_199.model"
 
 net = Net()
 net.load_state_dict(torch.load(PATH))

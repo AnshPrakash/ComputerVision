@@ -94,8 +94,8 @@ plt.ylabel('Loss')
 plt.xlabel('epochs')
 plt.plot(iterations, Loss, 'r') # plotting t, a separately 
 # plt.plot(iterations, b, 'ValidLoss') # plotting t, b separately 
-plt.show()
 plt.savefig('TrainLoss.png')
+plt.show()
 
 
 

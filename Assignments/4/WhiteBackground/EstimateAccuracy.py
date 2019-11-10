@@ -25,12 +25,13 @@ criterion = nn.CrossEntropyLoss()
 Loss = []
 iterations = []
 Accuracy = []
-epochs = 2
+epochs = 50
 with torch.no_grad():
   for epoch_i in range(epochs):
-    PATH = "./Models/SimpleMusicModel_"+str(epoch_i)+".model"
+    PATH = "./Models/SimpleMusicModel_"+str(epoch_i + 130 )+".model"
     net = Net()
     net.load_state_dict(torch.load(PATH))
+    net.eval() 
     running_loss = 0.0
     total_pts = 0
     conf = [[0]*4 for _ in range(4)]
@@ -49,12 +50,12 @@ with torch.no_grad():
           # target = Variable(torch.from_numpy(np.array([one_hot])).float())
           output = net(inputs)
           # print(output)
-          # print(target)
-          # loss = criterion(output, target)
           _, predicted = torch.max(output.data, 1)
+          # loss = criterion(output, target)
           conf[label][predicted] += 1
-          loss = criterion(output, torch.from_numpy(np.array([label]))) #for cross entropy
+          loss = criterion(output,torch.from_numpy(np.array([label]))) #for cross entropy
           running_loss += loss.item()
+          # print(output)
           # print(len(target))
           total_pts += 1
         else:
