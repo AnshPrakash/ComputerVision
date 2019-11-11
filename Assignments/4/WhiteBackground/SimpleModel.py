@@ -57,20 +57,24 @@ iterations = []
 
 net.train()
 for epoch_i in range(epochs):
+  caps = []
+  for label in labels:
+    caps.append(cv2.VideoCapture(classes[label]+"train.mp4"))
+    if (caps[label].isOpened()== False):
+      print("Error opening video file")
+      exit()
   running_loss = 0.0
   total_pts = 0
-  for label in labels:
-    cap = cv2.VideoCapture(classes[label]+"train.mp4")
-    if (cap.isOpened()== False):
-      print("Error opening video file")
-    one_hot = [0,0,0,0]
-    one_hot[label] = 1
-    while cap.isOpened():
-      sizeOfBatch = 0
-      batch_data = []
-      batch_labels = []
-      while sizeOfBatch!=batch_size and cap.isOpened():
-        ret, frame = cap.read() 
+  while caps[0].isOpened() or caps[1].isOpened() or caps[2].isOpened() or caps[3].isOpened():
+    sizeOfBatch = 0
+    batch_data = []
+    batch_labels = []
+    while (caps[0].isOpened() or caps[1].isOpened() or caps[2].isOpened() or caps[3].isOpened()) and sizeOfBatch!=batch_size:
+      for label in labels:
+        if sizeOfBatch == batch_size:
+          break
+        ret, frame = caps[label].read() 
+        # print(ret,sizeOfBatch)
         if ret== True:
           frame = cv2.split(frame)[0]
           frame = cv2.resize(frame, (50,50), interpolation = cv2.INTER_AREA)
@@ -79,33 +83,23 @@ for epoch_i in range(epochs):
           batch_labels.append(label)
           sizeOfBatch += 1
         else:
-          break  
-      if (len(batch_labels)) != batch_size:
-        break
-      batch_data = np.array(batch_data)
-    
-      # ret, frame = cap.read() 
-      # frame = cv2.split(frame)[0]
-      # frame = cv2.resize(frame, (50,50), interpolation = cv2.INTER_AREA)
-      # frame = frame/255.0
-      # inputs = (torch.from_numpy(frame.reshape(batch_size,1,frame.shape[0],frame.shape[1])).float()).to(device)
-      # target = (torch.from_numpy(np.array([one_hot])).float()).to(device)
-
-      inputs = (torch.from_numpy(batch_data.reshape(batch_size,1,50,50)).float()).to(device)
-      output = net(inputs)
-      # print(output)
-      # print(output.size())
-      # print(batch_labels)
-      # print(target)
-      # loss = criterion(output, target)
-      loss = criterion(output, torch.from_numpy(np.array(batch_labels)).to(device)) #for cross entropy
-      optimizer.zero_grad()   # zero the gradient buffers
-      net.zero_grad()
-      loss.backward()
-      optimizer.step()
-      running_loss += loss.cpu().item()
-      total_pts += len(batch_labels)
-    cap.release()
+          caps[label].release()
+          continue
+    if (len(batch_labels)) != batch_size:
+      break
+    # print("Got data",sizeOfBatch)
+    batch_data = np.array(batch_data)
+    inputs = Variable(torch.from_numpy(batch_data.reshape(batch_size,1,50,50)).float()).to(device)
+    output = net(inputs)
+    loss = criterion(output, Variable(torch.from_numpy(np.array(batch_labels))).to(device)) #for cross entropy
+    optimizer.zero_grad()   # zero the gradient buffers
+    net.zero_grad()
+    loss.backward()
+    optimizer.step()
+    running_loss += loss.cpu().item()
+    total_pts += len(batch_labels)
+  for label in labels:
+    caps[label].release()
   save_models(epoch_i)
   Loss.append(running_loss/total_pts)
   iterations.append(epoch_i)
