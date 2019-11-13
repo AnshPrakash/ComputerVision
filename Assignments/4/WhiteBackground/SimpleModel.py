@@ -19,11 +19,12 @@ def countFrames(vidFile):
   return(total)
 
 dataset = sys.argv[1] 
+typeVid = sys.argv[2] # example handDetected(train_bg.mp4)  or raw(train.mp4)
 
 classes = ["/background/","/next/","/prev/","/stop/"]
 classes = [dataset +c for c in classes]
 for clss in classes:
-  print(clss+"train.mp4",count_frames(clss+"train.mp4"))
+  print(clss+"train.mp4",count_frames(clss+typeVid))
 
 labels = [0,1,2,3]
 
@@ -48,8 +49,8 @@ print(net)
 criterion = nn.CrossEntropyLoss()
 # criterion = nn.MSELoss()
 # optimizer = optim.SGD(net.parameters(), lr=0.001,momentum = 0.9,weight_decay=1e-5)
-optimizer = torch.optim.Adam(net.parameters(), lr=0.001)
-epochs = 200
+optimizer = torch.optim.Adam(net.parameters(), lr=0.001,weight_decay=1e-4)
+epochs = 100
 batch_size = 64
 
 Loss = []
@@ -59,7 +60,7 @@ net.train()
 for epoch_i in range(epochs):
   caps = []
   for label in labels:
-    caps.append(cv2.VideoCapture(classes[label]+"train.mp4"))
+    caps.append(cv2.VideoCapture(classes[label]+typeVid))
     if (caps[label].isOpened()== False):
       print("Error opening video file")
       exit()
@@ -76,9 +77,9 @@ for epoch_i in range(epochs):
         ret, frame = caps[label].read() 
         # print(ret,sizeOfBatch)
         if ret== True:
-          frame = cv2.split(frame)[0]
-          frame = cv2.resize(frame, (50,50), interpolation = cv2.INTER_AREA)
-          frame = frame/255.0 
+          frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+          frame = frame/255.0
+          # frame = frame -frame.mean()
           batch_data.append(frame)
           batch_labels.append(label)
           sizeOfBatch += 1
